@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add New Transaction</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  
+  <header class="main-navbar">
+    <div class="navbar-logo">
+      <img src="/images/logo.png" alt="OSLAM Logo">
+      <span class="navbar-title">OSLAM</span>
+    </div>
+    <nav class="navbar-links">
+      <a href="/index">Dashboard</a>
+      <a href="/addpatient">Add Patient</a>
+      <a href="/records">Records</a>
+      <a href="/transaction">Pending</a>
+      <a href="/processed">Completed</a>
+      <a href="/voidtransaction">Voided Transactions</a>
+      <a href="/login">Logout</a>
+    </nav>
+  </header>
+  <h1>Add Transaction</h1><br>
+  <form action="/search-patient" method="POST">
+    <input type="text" name="search" placeholder="Search by name or patient ID" required>
+    <button type="submit">Search</button>
+  </form><br>
+
+  <% if (patient) { %>
+    <h2>Patient Found</h2><br>
+    <p><strong>Name:</strong> <%= patient.name %></p>
+    <p><strong>Patient ID:</strong> <%= patient.patientId %></p>
+
+    <form action="/submit-multiple-transactions" method="POST" oninput="calculateTotalAll()">
+      <input type="hidden" name="patientId" value="<%= patient.patientId %>">
+      <input type="hidden" name="patientName" value="<%= patient.name %>">
+      <input type="hidden" name="birthday" value="<%= patient.birthday ? patient.birthday.toISOString().split('T')[0] : '' %>">
+
+      <br>
+      <div id="transactionContainer">
+        <div class="transaction-block">
+          <label>Transaction Type:</label>
+          <select name="transactionType[]" onchange="updateDescriptions(this)" required>
+            <option value="">Select</option>
+            <% transactionTypes.forEach(t => { %>
+              <option value="<%= t.type %>"><%= t.type %></option>
+            <% }) %>
+          </select>
+
+          <label>Description:</label>
+          <select name="description[]" onchange="updateUnitPrice(this)" required>
+            <option value="">Select</option>
+          </select>
+
+          <label>Unit Amount:
+          <input type="number" name="unitAmount[]" readonly required>
+         </label>
+          <label>Quantity:
+          <input type="number" name="quantity[]" required>
+        </label>
+          <label>Total Amount:
+          <input type="number" name="totalAmount[]" readonly>
+        </label>
+          <button type="button" class="remove-btn" onclick="removeTransactionBlock(this)">X</button> <br>
+          <hr>
+        </div>
+      </div>
+      <br>
+      <button type="button" onclick="addTransactionBlock()">+ Add Another Transaction</button>
+      <br><br>
+      <h3>Grand Total: <span id="grandTotal">0</span></h3><br>
+      <button type="submit">Submit All</button>
+      <button type="button" onclick="window.location.href='/add-new-transaction';">Cancel</button>
+    </form>
+
+    <script>
+      const rawData = `<%- JSON.stringify(transactionTypes).replace(/</g, '\\u003c') %>`;
+      const transactionData = JSON.parse(rawData);
+
+      function updateDescriptions(select) {
+        const type = select.value;
+        const block = select.closest('.transaction-block');
+        const descriptionSelect = block.querySelector('select[name="description[]"]');
+        const unitAmountInput = block.querySelector('input[name="unitAmount[]"]');
+
+        descriptionSelect.innerHTML = '<option value="">Select</option>';
+        unitAmountInput.value = '';
+
+        const selectedType = transactionData.find(t => t.type === type);
+        if (selectedType) {
+          selectedType.descriptions.forEach(desc => {
+            const opt = document.createElement('option');
+            opt.value = desc.name;
+            opt.textContent = desc.name;
+            opt.dataset.unit = desc.unitAmount;
+            descriptionSelect.appendChild(opt);
+          });
+        }
+      }
+
+      function updateUnitPrice(select) {
+        const unit = select.options[select.selectedIndex].dataset.unit;
+        const block = select.closest('.transaction-block');
+        block.querySelector('input[name="unitAmount[]"]').value = unit;
+        calculateTotalAll();
+      }
+
+      function calculateTotalAll() {
+        const blocks = document.querySelectorAll('.transaction-block');
+        let grandTotal = 0;
+
+        blocks.forEach(block => {
+          const unit = parseFloat(block.querySelector('input[name="unitAmount[]"]').value || 0);
+          const qty = parseInt(block.querySelector('input[name="quantity[]"]').value || 0);
+          const total = unit * qty;
+          block.querySelector('input[name="totalAmount[]"]').value = total;
+
+          grandTotal += total;
+        });
+
+        document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
+      }
+
+      function addTransactionBlock() {
+        const container = document.getElementById('transactionContainer');
+        const newBlock = document.createElement('div');
+        newBlock.className = 'transaction-block';
+
+        newBlock.innerHTML = `
+          <label>Transaction Type:</label>
+          <select name="transactionType[]" onchange="updateDescriptions(this)" required>
+            <option value="">Select</option>
+            ${transactionData.map(t => `<option value="${t.type}">${t.type}</option>`).join('')}
+          </select>
+
+          <label>Description:</label>
+          <select name="description[]" onchange="updateUnitPrice(this)" required>
+            <option value="">Select</option>
+          </select>
+
+          <label>Unit Amount:</label>
+          <input type="number" name="unitAmount[]" readonly required>
+
+          <label>Quantity:</label>
+          <input type="number" name="quantity[]" required>
+
+          <label>Total Amount:</label>
+          <input type="number" name="totalAmount[]" readonly>
+          <button type="button" class="remove-btn" onclick="removeTransactionBlock(this)">X</button>
+          <hr>
+        `;
+
+        container.appendChild(newBlock);
+        calculateTotalAll();  
+      }
+
+      function removeTransactionBlock(button) {
+        const block = button.closest('.transaction-block');
+        block.remove();
+        calculateTotalAll(); 
+      }
+    </script>
+
+  <% } %>
+</body>
+</html>

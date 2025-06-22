@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Void Transactions</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="main-navbar">
+        <div class="navbar-logo">
+          <img src="/images/logo.png" alt="OSLAM Logo">
+          <span class="navbar-title">OSLAM</span>
+        </div>
+        <nav class="navbar-links">
+          <a href="/transaction">Back</a>
+        </nav>
+      </header>
+<h1>Void Transactions</h1>
+
+
+<form id="voidForm" action="/void-transaction" method="POST">
+  <table class="table" id="recordsTable">
+    <thead>
+      <tr>
+        <th>Select</th>
+        <th>Transaction Number</th>
+        <th>Patient Name</th>
+        <th>Birthday</th>
+        <th>Address</th>
+        <th>Gender</th>
+        <th>Transaction Type</th>
+        <th>Description</th>
+        <th>Unit Amount</th>
+        <th>Quantity</th>
+        <th>Total Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% transactions.forEach(transaction => { %>
+        <tr>
+          <td><input type="checkbox" name="selectedTransactions" value="<%= transaction._id %>"></td>
+          <td><%= transaction.transactionNumber %></td>
+          <td><%= transaction.patientName %></td>
+          <td><%= transaction.birthday.toLocaleDateString() %></td> 
+          <td><%= transaction.address %></td>
+          <td><%= transaction.gender %></td>
+          <td><%= transaction.transactionType %></td>
+          <td><%= transaction.description %></td>
+          <td><%= transaction.unitAmount %></td>
+          <td><%= transaction.quantity %></td>
+          <td><%= transaction.totalAmount %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  
+<div class="modal" id="passwordModal" tabindex="-1" role="dialog" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="passwordModalLabel">Enter Admin Password</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <input type="password" id="adminPassword" class="form-control" placeholder="Enter Admin Password" />
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="confirmVoid">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#passwordModal">Void Selected Transactions</button>
+</form>
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    $('#confirmVoid').on('click', function () {
+      const password = $('#adminPassword').val();
+  
+      if (password === 'admin1234') {
+        
+        $('<input>').attr({
+          type: 'hidden',
+          name: 'adminPassword',
+          value: password
+        }).appendTo('#voidForm');
+  
+        $('#voidForm').submit(); 
+      } else {
+        alert('Incorrect password!');
+      }
+    });
+  </script>
+  
+</body>
+</html>

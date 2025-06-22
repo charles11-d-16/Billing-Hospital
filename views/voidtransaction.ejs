@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voided Transactions</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="main-navbar">
+        <div class="navbar-logo">
+          <img src="/images/logo.png" alt="OSLAM Logo">
+          <span class="navbar-title">OSLAM</span>
+        </div>
+        <nav class="navbar-links">
+          <a href="/index">Dashboard</a>
+          <a href="/addpatient">Add Patient</a>
+          <a href="/add-new-transaction">Add Transaction</a>
+          <a href="/records">Records</a>
+          <a href="/transaction">Pending</a>
+          <a href="/processed">Completed</a>
+          <a href="/voidtransaction">Voided Transactions</a>
+          <a href="/login">Logout</a>
+        </nav>
+      </header>
+    <h1>Voided Transactions</h1>
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Transaction Number</th>
+          <th>Patient ID</th>
+          <th>Patient Name</th>
+          <th>Birthday</th>
+          <th>Address</th>
+          <th>Gender</th>
+          <th>Transaction Type</th>
+          <th>Description</th>
+          <th>Unit Amount</th>
+          <th>Quantity</th>
+          <th>Total Amount</th>
+          <th>Voided Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% voidTransactions.forEach(vt => { %>
+          <tr>
+            <td><%= vt.transactionNumber %></td>
+            <td><%= vt.patientId %></td>
+            <td><%= vt.patientName %></td>
+            <td><%= vt.birthday.toLocaleDateString() %></td>
+            <td><%= vt.address %></td>
+            <td><%= vt.gender %></td>
+            <td><%= vt.transactionType %></td>
+            <td><%= vt.description %></td>
+            <td><%= vt.unitAmount.toFixed(2) %></td>
+            <td><%= vt.quantity %></td>
+            <td><%= vt.totalAmount.toFixed(2) %></td>
+            <td><%= vt.date.toLocaleDateString() %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+</body>
+</html>

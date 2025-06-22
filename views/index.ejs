@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hospital Billing Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <body>
+    <header class="main-navbar">
+      <div class="navbar-logo">
+        <img src="/images/logo.png" alt="OSLAM Logo">
+        <span class="navbar-title">OSLAM</span>
+      </div>
+      <nav class="navbar-links">
+        <a href="/add-new-transaction">Add Transaction</a>
+        <a href="/addpatient">Add Patient</a>
+        <a href="/records">Records</a>
+        <a href="/transaction">Pending</a>
+        <a href="/processed">Completed</a>
+        <% if (role === 'admin') { %>
+          <a href="/register">Register Staff</a>
+        <% } %>
+        <a href="/voidtransaction">Voided Transactions</a>
+        <a href="/login">Logout</a>
+      </nav>
+    </header>
+    <div class="container">
+      <h1>OSLAM Ospital ng Lungsod Agham ng Muñoz</h1>
+    
+      <div class="dashboard-filter">
+        <label>Start Date:
+          <input type="date" id="startDate">
+        </label>
+        <label>End Date:
+          <input type="date" id="endDate">
+        </label>
+        <button onclick="loadDashboardData()">Filter</button>
+      </div>
+    
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3>Created Patient Acount & Transaction Per Day</h3>
+          <canvas id="barChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Processed Total Amount</h3>
+          <canvas id="lineChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Processed vs Unprocessed Patients</h3>
+          <canvas id="pieChart1"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Total vs Discounted Amount (Pie Chart)</h3>
+          <canvas id="pieChart2"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    
+  <script>
+    let barChart, lineChart, pieChart1, pieChart2;
+
+    function renderChart(chart, type, id, data, options = {}) {
+      if (chart) chart.destroy();
+      return new Chart(document.getElementById(id), {
+        type,
+        data,
+        options
+      });
+    }
+
+    async function loadDashboardData() {
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+
+      if (!startDate || !endDate) {
+        alert("Please select both start and end dates.");
+        return;
+      }
+
+      const res = await fetch(`/api/dashboard-analytics?startDate=${startDate}&endDate=${endDate}`);
+      const data = await res.json();
+
+      const labels = Array.from(new Set([
+        ...Object.keys(data.patientPerDay),
+        ...Object.keys(data.transactionsPerDay)
+      ])).sort();
+
+      
+      barChart = renderChart(barChart, 'bar', 'barChart', {
+        labels,
+        datasets: [
+          {
+            label: 'Number of People',
+            data: labels.map(date => data.patientPerDay[date] || 0),
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          },
+          {
+            label: 'Number of Transactions',
+            data: labels.map(date => data.transactionsPerDay[date] || 0),
+            backgroundColor: 'rgba(255, 159, 64, 0.7)',
+          }
+        ]
+      }, {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top' }
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      });
+
+      
+      lineChart = renderChart(lineChart, 'line', 'lineChart', {
+        labels: Object.keys(data.amountPerDay),
+        datasets: [{
+          label: 'Total Transaction Amount',
+          data: Object.values(data.amountPerDay),
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          fill: true,
+          tension: 0.4
+        }]
+      });
+
+      
+      pieChart1 = renderChart(pieChart1, 'pie', 'pieChart1', {
+        labels: ['Processed Patients', 'Unprocessed Patients'],
+        datasets: [{
+          data: [data.processedCount, data.unprocessedCount],
+          backgroundColor: ['#4CAF50', '#F44336']
+        }]
+      });
+
+      
+      pieChart2 = renderChart(pieChart2, 'pie', 'pieChart2', {
+        labels: ['Total Amount', 'Discounted Amount'],
+        datasets: [{
+          data: [data.totalAmount, data.discountedAmount],
+          backgroundColor: ['#2196F3', '#FFC107']
+        }]
+      });
+    }
+  </script>
+
+</body>
+</html>

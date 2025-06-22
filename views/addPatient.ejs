@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Patient</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="main-navbar">
+    <div class="navbar-logo">
+      <img src="/images/logo.png" alt="OSLAM Logo">
+      <span class="navbar-title">OSLAM</span>
+    </div>
+    <nav class="navbar-links">
+      <a href="/index">Dashboard</a>
+      <a href="/add-new-transaction">Add Transaction</a>
+      <a href="/records">Records</a>
+      <a href="/transaction">Pending</a>
+      <a href="/processed">Completed</a><br>
+      <a href="/voidtransaction">Voided Transactions</a>
+      <a href="/login">Logout</a>
+    </nav>
+  </header>
+  <h1>Register Patient</h1><br>
+  <div class="dashboard-filter">
+    <form action="/add-patient" method="POST">
+      <label>Name:
+      <input type="text" name="name" required>
+    </label>
+      <label>Birthday:
+      <input type="date" name="birthday" required>
+    </label>
+
+      <label>Address:
+      <input type="text" name="address" required>
+    </label>
+      <label>Gender:</label>
+      <select name="gender" required>
+        <option value="">Select</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+      <label>
+      <button type="submit">Register</button>
+    </label>
+    </form>
+  </div>
+  <div class="form-container">
+    <h2>All Registered Patients</h2>
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Patient ID</th>
+          <th>Name</th>
+          <th>Birthday</th>
+          <th>Address</th>
+          <th>Gender</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% patients.forEach(patient => { %>
+          <tr>
+            <td><%= patient.patientId %></td>
+            <td><%= patient.name %></td>
+            <td><%= patient.birthday.toISOString().substring(0, 10) %></td>
+            <td><%= patient.address %></td>
+            <td><%= patient.gender %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  
+</body>
+</html>

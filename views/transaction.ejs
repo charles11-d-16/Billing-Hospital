@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Patient Transactions</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header class="main-navbar">
+    <div class="navbar-logo">
+      <img src="/images/logo.png" alt="OSLAM Logo">
+      <span class="navbar-title">OSLAM</span>
+    </div>
+    <nav class="navbar-links">
+      <a href="/index">Dashboard</a>
+      <a href="/addpatient">Add Patient</a>
+      <a href="/add-new-transaction">Add Transaction</a>
+      <a href="/records">Records</a>
+      <a href="/processed">Completed</a>
+      <a href="/voidtransaction">Voided Transactions</a>
+      <a href="/login">Logout</a>
+    </nav>
+  </header>
+  <h1>Pending Transactions</h1><br>
+  
+  <table id="recordsTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Patient ID</th>
+        <th>Birthday</th>
+        <th>Address</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% patients.forEach(p => { %>
+        <tr>
+          <td><%= p.name %></td>
+          <td><%= p.patientId %></td>
+          <td><%= p.birthday ? p.birthday.toISOString().split('T')[0] : 'N/A' %></td>
+          <td><%= p.address %></td>
+          <td>
+            <form action="/view-transactions" method="POST">
+              <input type="hidden" name="patientId" value="<%= p.patientId %>">
+              <button type="submit">View Transaction</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <% if (transactions && transactions.length > 0) { %>
+    <h2>Transactions for <%= transactions[0].patientName %> (ID: <%= transactions[0].patientId %>)</h2>
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Transaction No</th>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit Amount</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% transactions.forEach(t => { %>
+          <tr>
+            <td><%= t.transactionNumber %></td>
+            <td><%= t.date ? new Date(t.date).toISOString().split('T')[0] : 'N/A' %></td>
+            <td><%= t.description %></td>
+            <td><%= t.quantity %></td>
+            <td><%= t.unitAmount %></td>
+            <td><%= t.totalAmount %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  
+    
+    <div style="margin-top: 20px;">
+      <h3>Adjustments</h3>
+  
+      <label><input type="checkbox" id="seniorCitizen"> Senior Citizen (10% discount)</label><br>
+      <label><input type="checkbox" id="resident"> Resident (10% discount)</label><br><br>
+  
+      <label>PhilHealth Deduction: ₱ <input type="number" id="philhealth" value="0" min="0"></label><br><br>
+  
+      <strong>Original Grand Total: ₱ <span id="originalTotal">0.00</span></strong><br>
+      <strong>Adjusted Grand Total: ₱ <span id="adjustedTotal">0.00</span></strong><br><br>
+  
+      <button onclick="resetAdjustments()">Cancel</button>
+      <button type="button" onclick="window.location.href='/void'">Void</button><br><br>
+      <form action="/save-processed" method="POST" onsubmit="updateProcessedFormValues()">
+        
+        <input type="hidden" name="patientId" value="<%= transactions[0].patientId %>">
+        <input type="hidden" name="patientName" value="<%= transactions[0].patientName %>">
+        <input type="hidden" name="birthday" value="<%= transactions[0].birthday %>">
+        <input type="hidden" name="address" value="<%= transactions[0].address %>">
+        <input type="hidden" name="gender" value="<%= transactions[0].gender %>">
+      
+        
+        <input type="hidden" id="isSeniorInput" name="isSenior" value="false">
+        <input type="hidden" id="isResidentInput" name="isResident" value="false">
+        <input type="hidden" id="philHealthAmountInput" name="philHealthAmount" value="0">
+      
+        
+        <input type="hidden" id="originalTotalInput" name="originalTotal" value="0">
+        <input type="hidden" id="adjustedTotalInput" name="adjustedTotal" value="0">
+      
+        <button class="btn btn-warning" type="submit" onclick="exportToExcel()">Process and Print</button>
+      </form>
+
+    </div>
+  
+    
+    <script>
+      const transactions = JSON.parse(`<%- JSON.stringify(transactions).replace(/</g, '\\u003c') %>`);
+  
+      function calculateGrandTotal() {
+        let total = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
+        document.getElementById('originalTotal').innerText = total.toFixed(2);
+        return total;
+      }
+  
+      function applyAdjustments() {
+        let grandTotal = calculateGrandTotal();
+  
+        if (document.getElementById('seniorCitizen').checked) {
+          grandTotal *= 0.90;
+        }
+  
+        if (document.getElementById('resident').checked) {
+          grandTotal *= 0.90;
+        }
+  
+        const philhealth = parseFloat(document.getElementById('philhealth').value) || 0;
+        grandTotal -= philhealth;
+  
+        if (grandTotal < 0) grandTotal = 0;
+  
+        document.getElementById('adjustedTotal').innerText = grandTotal.toFixed(2);
+      }
+  
+      document.getElementById('seniorCitizen').addEventListener('change', applyAdjustments);
+      document.getElementById('resident').addEventListener('change', applyAdjustments);
+      document.getElementById('philhealth').addEventListener('input', applyAdjustments);
+  
+      function resetAdjustments() {
+        document.getElementById('seniorCitizen').checked = false;
+        document.getElementById('resident').checked = false;
+        document.getElementById('philhealth').value = 0;
+        applyAdjustments();
+      }
+  
+      window.onload = () => {
+        calculateGrandTotal();
+        applyAdjustments();
+      };
+  
+  async function exportToExcel() {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Patient Transactions');
+
+  
+  worksheet.addRow(['Patient Name', transactions[0].patientName]);
+  worksheet.addRow(['Patient ID', transactions[0].patientId]);
+  worksheet.addRow([]);
+
+  
+  worksheet.addRow(['Transaction No', 'Date', 'Description', 'Quantity', 'Unit Amount', 'Total']);
+
+  transactions.forEach(t => {
+    worksheet.addRow([
+      t.transactionNumber,
+      t.date ? new Date(t.date).toISOString().split('T')[0] : '',
+      t.description,
+      t.quantity,
+      t.unitAmount,
+      t.totalAmount
+    ]);
+  });
+
+  worksheet.addRow([]);
+  worksheet.addRow(['Original Grand Total', parseFloat(document.getElementById('originalTotal').innerText)]);
+  worksheet.addRow(['Senior Discount Applied', document.getElementById('seniorCitizen').checked ? 'Yes (-10%)' : 'No']);
+  worksheet.addRow(['Resident Discount Applied', document.getElementById('resident').checked ? 'Yes (-10%)' : 'No']);
+  worksheet.addRow(['PhilHealth Deduction', parseFloat(document.getElementById('philhealth').value) || 0]);
+  worksheet.addRow(['Adjusted Grand Total', parseFloat(document.getElementById('adjustedTotal').innerText)]);
+
+  const buf = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  saveAs(blob, `Transactions_${transactions[0].patientName}_${Date.now()}.xlsx`);
+}
+
+
+ 
+function updateProcessedFormValues() {
+    const originalTotal = parseFloat(document.getElementById('originalTotal').textContent);
+    const isSenior = document.getElementById('seniorCitizen').checked;
+    const isResident = document.getElementById('resident').checked;
+    const philHealthAmount = parseFloat(document.getElementById('philhealth').value) || 0;
+
+    let adjusted = originalTotal;
+
+    
+    if (isSenior) adjusted -= originalTotal * 0.1;
+    if (isResident) adjusted -= originalTotal * 0.1;
+    
+    
+    adjusted -= philHealthAmount;
+
+    
+    document.getElementById('originalTotalInput').value = originalTotal;
+    document.getElementById('adjustedTotalInput').value = adjusted.toFixed(2);
+    document.getElementById('isSeniorInput').value = isSenior ? 'true' : 'false';
+    document.getElementById('isResidentInput').value = isResident ? 'true' : 'false';
+    document.getElementById('philHealthAmountInput').value = philHealthAmount || 0;
+}
+
+
+document.getElementById('seniorCitizen').addEventListener('change', updateProcessedFormValues);
+document.getElementById('resident').addEventListener('change', updateProcessedFormValues);
+document.getElementById('philhealth').addEventListener('input', updateProcessedFormValues);
+
+
+updateProcessedFormValues();
+
+    </script>
+  <% } %>
+  
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+</body>
+</html>

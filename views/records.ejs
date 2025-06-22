@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>All Transaction Records</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="main-navbar">
+    <div class="navbar-logo">
+      <img src="/images/logo.png" alt="OSLAM Logo">
+      <span class="navbar-title">OSLAM</span>
+    </div>
+    <nav class="navbar-links">
+      <a href="/index">Dashboard</a>
+      <a href="/addpatient">Add Patient</a>
+      <a href="/add-new-transaction">Add Transaction</a>
+      <a href="/transaction">Pending</a>
+      <a href="/processed">Completed</a>
+      <a href="/voidtransaction">Voided Transactions</a>
+      <a href="/login">Logout</a><br><br>
+    </nav>
+  </header>
+  <h1>All Transaction Records</h1><br>
+  
+
+  
+  <div class="dashboard-filter" style="margin: 20px 0;">
+    <label for="searchInput">Search:
+    <input type="text" id="searchInput" placeholder="Patient ID or Name" oninput="filterRecords()">
+  </label>
+    <label for="startDate">Start Date:
+    <input type="date" id="startDate">
+  </label>
+    <label for="endDate">End Date:
+    <input type="date" id="endDate">
+  </label>
+    <button onclick="filterRecords()">Filter</button>
+    <button onclick="exportToExcel()">Print</button>
+    <button type="button" onclick="window.location.href='/records'">Refresh</button>
+  </div>
+
+  <table border="1" cellpadding="5" id="recordsTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Patient ID</th>
+        <th>Birthday</th>
+        <th>Address</th>
+        <th>Transaction No.</th>
+        <th>Date</th>
+        <th>Description</th>
+        <th>Quantity</th>
+        <th>Unit Amount</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody id="recordsTableBody">
+      <% transactions.forEach(tran => { %>
+        <tr data-date="<%= tran.date ? tran.date.toISOString().split('T')[0] : '' %>" data-total="<%= tran.totalAmount %>" data-id="<%= tran.patientId %>" data-name="<%= tran.patientName.toLowerCase() %>" data-trans-num="<%= tran.transactionNumber %>">
+          <td><%= tran.patientName %></td>
+          <td><%= tran.patientId %></td>
+          <td><%= tran.birthday ? tran.birthday.toISOString().split('T')[0] : 'N/A' %></td>
+          <td><%= tran.address || 'N/A' %></td>
+          <td><%= tran.transactionNumber %></td>
+          <td><%= tran.date ? tran.date.toISOString().split('T')[0] : 'N/A' %></td>
+          <td><%= tran.description %></td>
+          <td><%= tran.quantity %></td>
+          <td><%= tran.unitAmount %></td>
+          <td><%= tran.totalAmount %></td>
+        </tr>
+      <% }) %>
+
+      <% processedTransactions.forEach(processed => {
+        processed.transactions.forEach(tran => { %>
+          <tr data-date="<%= tran.date ? tran.date.toISOString().split('T')[0] : '' %>" data-total="<%= tran.totalAmount %>" data-id="<%= processed.patientId %>" data-name="<%= processed.patientName.toLowerCase() %>" data-trans-num="<%= tran.transactionNumber %>">
+            <td><%= processed.patientName %></td>
+            <td><%= processed.patientId %></td>
+            <td><%= processed.birthday ? processed.birthday.toISOString().split('T')[0] : 'N/A' %></td>
+            <td><%= processed.address || 'N/A' %></td>
+            <td><%= tran.transactionNumber %></td>
+            <td><%= tran.date ? tran.date.toISOString().split('T')[0] : 'N/A' %></td>
+            <td><%= tran.description %></td>
+            <td><%= tran.quantity %></td>
+            <td><%= tran.unitAmount %></td>
+            <td><%= tran.totalAmount %></td>
+          </tr>
+      <% }) }) %>
+    </tbody>
+  </table>
+
+  <div style="margin-top: 15px;">
+    <strong>Total Amount: ₱<span id="totalAmount">0.00</span></strong>
+  </div>
+
+  <script>
+    function filterRecords() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+      const rows = document.querySelectorAll('#recordsTableBody tr');
+      let total = 0;
+
+      rows.forEach(row => {
+        const date = row.getAttribute('data-date');
+        const amount = parseFloat(row.getAttribute('data-total')) || 0;
+        const patientId = row.getAttribute('data-id').toLowerCase();
+        const patientName = row.getAttribute('data-name').toLowerCase();
+        const transactionNumber = row.getAttribute('data-trans-num').toLowerCase();
+
+        const withinDate = (!start || date >= start) && (!end || date <= end);
+        const matchesSearch = 
+          patientId.includes(searchTerm) || 
+          patientName.includes(searchTerm) || 
+          transactionNumber.includes(searchTerm);
+
+        if (withinDate && matchesSearch) {
+          row.style.display = '';
+          total += amount;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      document.getElementById('totalAmount').textContent = total.toFixed(2);
+    }
+
+    function exportToExcel() {
+      const table = document.getElementById('recordsTable');
+      const rows = Array.from(table.querySelectorAll('tbody tr'))
+        .filter(row => row.style.display !== 'none')
+        .map(row => Array.from(row.cells).map(cell => cell.innerText));
+
+      const headers = Array.from(table.querySelectorAll('thead th'))
+        .map(th => th.innerText);
+
+      
+      rows.push(["", "", "", "", "", "", "", "", "", "Grand Total", document.getElementById('totalAmount').textContent]);
+
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "FilteredRecords");
+
+      XLSX.writeFile(workbook, "Filtered_Transactions.xlsx");
+    }
+  </script>
+  
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Processed Transactions</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="main-navbar">
+    <div class="navbar-logo">
+      <img src="/images/logo.png" alt="OSLAM Logo">
+      <span class="navbar-title">OSLAM</span>
+    </div>
+    <nav class="navbar-links">
+      <a href="/index">Dashboard</a>
+      <a href="/addpatient">Add Patient</a>
+      <a href="/add-new-transaction">Add Transaction</a>
+      <a href="/records">Records</a>
+      <a href="/transaction">Pending</a>
+      <a href="/voidtransaction">Voided Transactions</a>
+      <a href="/login">Logout</a>
+    </nav>
+  </header>
+  <h1>Processed Transactions</h1>
+  <br>
+  <br>
+  
+  <div class="filter-form">
+    <form method="GET" action="/processed">
+      <label for="searchInput">Search:</label>
+      <input type="text" id="searchInput" name="search" value="<%= search || '' %>" placeholder="Patient ID or Name">
+
+      <label for="startDate">Start Date:</label>
+      <input type="date" id="startDate" name="startDate" value="<%= startDate || '' %>">
+
+      <label for="endDate">End Date:</label>
+      <input type="date" id="endDate" name="endDate" value="<%= endDate || '' %>">
+
+      <label for="discounted">Discounted Only:</label>
+      <input type="radio" id="discountedYes" name="discounted" value="true" <%= discounted === 'true' ? 'checked' : '' %>> Yes
+      <input type="radio" id="discountedNo" name="discounted" value="false" <%= discounted === 'false' ? 'checked' : '' %>> No
+
+      <button type="submit">Filter</button>
+      <button type="button" onclick="exportProcessed()">Print</button>
+      <button type="button" onclick="window.location.href='/processed'">Refresh</button>
+    </form>
+    <br>
+  </div>
+
+
+  
+  <table id="processedTable">
+    <thead>
+      <tr>
+        <th>Patient ID</th>
+        <th>Name</th>
+        <th>Birthday</th>
+        <th>Address</th>
+        <th>Gender</th>
+        <th>Original Total</th>
+        <th>Adjusted Total</th>
+        <th>Discounted Amount</th>
+        <th>Is Senior</th>
+        <th>Is Resident</th>
+        <th>PhilHealth</th>
+        <th>Date Processed</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% processed.forEach(p => { 
+           let discount = p.originalTotal - p.adjustedTotal;
+      %>
+    
+        <tr class="header-repeat">
+          <th>Patient ID</th>
+          <th>Name</th>
+          <th>Birthday</th>
+          <th>Address</th>
+          <th>Gender</th>
+          <th>Original Total</th>
+          <th>Adjusted Total</th>
+          <th>Discounted Amount</th>
+          <th>Is Senior</th>
+          <th>Is Resident</th>
+          <th>PhilHealth</th>
+          <th>Date Processed</th>
+        </tr>
+    
+        <tr class="processedRow">
+          <td><%= p.patientId %></td>
+          <td><%= p.patientName %></td>
+          <td><%= p.birthday ? p.birthday.toISOString().split('T')[0] : 'N/A' %></td>
+          <td><%= p.address %></td>
+          <td><%= p.gender %></td>
+          <td><%= p.originalTotal.toFixed(2) %></td>
+          <td><%= p.adjustedTotal.toFixed(2) %></td>
+          <td><%= discount.toFixed(2) %></td>
+          <td><%= p.isSenior ? '✔️' : '❌' %></td>
+          <td><%= p.isResident ? '✔️' : '❌' %></td>
+          <td><%= p.philHealthAmount ? p.philHealthAmount.toFixed(2) : '0.00' %></td>
+          <td><%= new Date(p.dateProcessed).toLocaleDateString() %></td>
+        </tr>
+    
+        <% if (p.transactions && p.transactions.length > 0) { %>
+          <tr>
+            <td colspan="12">
+              <strong>Transactions:</strong>
+              <table class="transaction-table">
+                <thead>
+                  <tr>
+                    <th>Transaction No</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Amount</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% p.transactions.forEach(t => { %>
+                    <tr>
+                      <td><%= t.transactionNumber %></td>
+                      <td><%= new Date(t.date).toLocaleDateString() %></td>
+                      <td><%= t.description %></td>
+                      <td><%= t.quantity %></td>
+                      <td><%= t.unitAmount.toFixed(2) %></td>
+                      <td><%= t.totalAmount.toFixed(2) %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        <% } %>
+      <% }) %>
+    </tbody>
+    
+  </table>
+
+  <div id="totals">
+    <p>Total Adjusted Amount: ₱<%= grandAdjusted %></p>
+    <p>Total Discount: ₱<%= grandDiscount %></p>
+  </div>
+
+  <script>
+    function exportProcessed() {
+      const table = document.getElementById("processedTable");
+      const rows = Array.from(table.querySelectorAll("tr"));
+      const data = rows.map(row => Array.from(row.cells).map(cell => cell.innerText));
+
+      
+      data.push([]);
+      data.push(["", "", "", "", "", "", "Total Adjusted", document.getElementById("totals").children[0].innerText.split("₱")[1]]);
+      data.push(["", "", "", "", "", "", "Total Discount", document.getElementById("totals").children[1].innerText.split("₱")[1]]);
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, "Processed Transactions");
+      XLSX.writeFile(wb, "Processed_Transactions.xlsx");
+    }
+  </script>
+</body>
+</html>

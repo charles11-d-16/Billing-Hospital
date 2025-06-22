@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register Staff</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="main-navbar">
+    <div class="navbar-logo">
+      <img src="/images/logo.png" alt="OSLAM Logo">
+      <span class="navbar-title">OSLAM</span>
+    </div>
+    <nav class="navbar-links">
+      <a href="/index">Dashboard</a>
+      <a href="/addpatient">Add Patient</a>
+      <a href="/add-new-transaction">Add Transaction</a>
+      <a href="/records">Records</a>
+      <a href="/transaction">Pending</a>
+      <a href="/processed">Completed</a>
+      <a href="/voidtransaction">Voided Transactions</a>
+      <a href="/login">Logout</a>
+    </nav>
+  </header>
+  <h1>Register Staff</h1><br>
+  
+
+    <form action="/register" method="POST" class="form-container">
+      <label for="firstName">First Name:
+      <input type="text" name="firstName" id="firstName" required></label>
+
+      <label for="middleInitial">Middle Initial:</label>
+      <input type="text" name="middleInitial" id="middleInitial" maxlength="1" required></label>
+
+      <label for="surname">Surname:</label>
+      <input type="text" name="surname" id="surname" required></label>
+
+      <label for="birthday">Birthday:</label>
+      <input type="date" name="birthday" id="birthday" required></label><br><br>
+
+      <label for="address">Address:</label>
+      <input type="text" name="address" id="address" required></label>
+
+      <label for="staffId">Generated Staff ID:
+      <input type="text" name="staffId" value="<%= staffId %>" readonly></label>
+
+      <label for="email">Email:
+      <input type="email" name="email" id="email" required></label>
+
+      <label for="password">Password:
+      <input type="password" name="password" id="password" required></label><br><br>
+
+      
+        <button type="submit">Register</button>
+      
+    </form>
+    <br>
+  
+      <h2>Registered Staff</h2>
+      <table id="recordsTable">
+        <thead>
+          <tr>
+            <th>Staff ID</th>
+            <th>First Name</th>
+            <th>Middle Initial</th>
+            <th>Surname</th>
+            <th>Birthday</th>
+            <th>Address</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (staff && staff.length > 0) { %>
+            <% staff.forEach(function(staffMember) { %>
+              <tr>
+                <td><%= staffMember.staffId %></td>
+                <td><%= staffMember.firstName %></td>
+                <td><%= staffMember.middleInitial %></td>
+                <td><%= staffMember.surname %></td>
+                <td><%= new Date(staffMember.birthday).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) %></td>
+                <td><%= staffMember.address %></td>
+                <td><%= staffMember.email %></td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr><td colspan="7">No staff registered yet.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    
+    
+</body>
+</html>
