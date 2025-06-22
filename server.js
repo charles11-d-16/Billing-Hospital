@@ -640,7 +640,7 @@ app.post('/void-transaction', async (req, res) => {
 
     res.redirect('/void');
   } catch (err) {
-    console.error('Error voiding transactions:', err);
+    console.error('Error voiding transactionsssssssssssssssss:', err);
     res.status(500).send('Internal Server Error');
   }
 });
