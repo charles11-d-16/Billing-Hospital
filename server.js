@@ -28,14 +28,18 @@ app.use(express.static('public'));
 app.set('view engine', 'ejs');
 
 
-mongoose.connect('mongodb://127.0.0.1:27017/BillingHospital', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('Connected to MongoDB');
-}).catch((err) => {
-  console.log('MongoDB Connection Error:', err);
-});
+// Load environment variables from .env file
+require('dotenv').config();
+
+// Connect using the MONGODB_URI from your .env
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("✅ Connected to MongoDB Atlas");
+  })
+  .catch((err) => {
+    console.log("❌ MongoDB Connection Error:", err);
+  });
+
 
 
 
